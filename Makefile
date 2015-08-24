@@ -3,12 +3,12 @@ MBR = ./mbr/
 EFLAGS = -hda osome.hdd -monitor stdio
 EMU = qemu-system-i386
 
-all: drive osome.hdd
+all: osome.hdd
 
-run: osome.hdd
+run: all
 	$(EMU) $(EFLAGS)
 	
-drive: mbr kernel
+osome.hdd: mbr kernel
 	dd if=/dev/zero of=osome.hdd bs=512 count=20000
 	dd if=$(MBR)boot.bin of=osome.hdd bs=512 count=1 conv=notrunc
 	dd if=$(KERNEL)kernel.bin of=osome.hdd bs=512 seek=1 conv=notrunc
@@ -19,7 +19,7 @@ kernel:
 mbr:
 	$(MAKE) -C $(MBR) boot.bin
 
-.PHONY: kernel mbr clean
+.PHONY: kernel mbr clean osome.hdd
 clean:	
 	@rm *.hdd
 	$(MAKE) -C $(MBR) clean
