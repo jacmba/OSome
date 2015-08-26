@@ -24,12 +24,14 @@ enum Color
 };
 
 char *VIDMEM;
+uint32_t SCREEN_WIDTH, SCREEN_HEIGHT;
 
 uint16_t cursor_x, cursor_y;
 uint8_t fore_color, back_color;
 
 uint8_t makecolor(uint8_t fore, uint8_t back);
 void sreen_clear();
+void scroll();
 void screen_put(char c);
 void screen_write(char *message);
 void screen_write_hex(int n);

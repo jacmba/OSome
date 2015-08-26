@@ -1,6 +1,10 @@
 #include "screen.h"
 
 char *VIDMEM = (char*)0xb8000;
+
+uint32_t SCREEN_WIDTH = 80;
+uint32_t SCREEN_HEIGHT = 25;
+
 uint16_t cursor_x = 0;
 uint16_t cursor_y = 0;
 uint8_t fore_color = GREEN;
@@ -8,14 +12,13 @@ uint8_t back_color = BLACK;
 
 uint8_t makecolor(uint8_t fore, uint8_t back) {
 	return fore | back << 4;
-
 }
 
 void screen_clear()
 {
 	uint8_t attr = makecolor(fore_color, back_color);
 	unsigned int i = 0;
-	while(i < (80 * 25 * 2)) {
+	while(i < (SCREEN_WIDTH * SCREEN_HEIGHT * 2)) {
 		VIDMEM[i] = ' ';
 		i++;
 		VIDMEM[i] = attr;
@@ -25,8 +28,30 @@ void screen_clear()
 	update_cursor(0, 0);
 }
 
+void scroll() {
+	if(cursor_y >= SCREEN_HEIGHT) {
+		uint32_t i;
+
+		for(i = 0; i < SCREEN_HEIGHT * SCREEN_WIDTH * 2; i++) {
+			VIDMEM[i] = VIDMEM[i + 80 * 2];
+		}
+
+		uint8_t attr = makecolor(fore_color, back_color);
+
+		i = (SCREEN_HEIGHT - 1) * SCREEN_WIDTH * 2;
+		while(i < (((SCREEN_HEIGHT - 1) * SCREEN_WIDTH) + SCREEN_WIDTH) * 2) {
+			VIDMEM[i] = ' ';
+			i++;
+			VIDMEM[i] = attr;
+			i++;
+		}
+		cursor_y = SCREEN_HEIGHT - 1;
+		update_cursor();
+	}
+}
+
 void screen_put(char c) {
-	uint32_t i = (cursor_y * 80 * 2) + (cursor_x * 2);
+	uint32_t i = (cursor_y * SCREEN_WIDTH * 2) + (cursor_x * 2);
 	uint16_t attr = makecolor(fore_color, back_color);
 
 	if(c == 10) {
@@ -38,11 +63,14 @@ void screen_put(char c) {
 		VIDMEM[i] = attr;
 		cursor_x++;
 
-		if(cursor_x >= 80) {
+		if(cursor_x >= SCREEN_WIDTH) {
 			cursor_x = 0;
 			cursor_y ++;
 		}
 	}
+
+	update_cursor();
+	scroll();
 }
 
 void screen_write(char *message)
@@ -65,7 +93,7 @@ void screen_write_hex(int n) {
 		num *= (-1);
 	}
 
-	while(num > 0x10) {
+	while(num >= 0x10) {
 		int least = num % 0x10;
 
 		tmp[pos] = digits[least];
@@ -109,7 +137,7 @@ void screen_write_dec(int n){
 		num *= -1;
 	}
 
-	while(num > 10) {
+	while(num >= 10) {
 		int least = num % 10;
 
 		tmp[pos] = digits[least];
@@ -141,7 +169,7 @@ void move_cursor(uint16_t x, uint16_t y) {
 }
 
 void update_cursor() {
-	uint16_t position = (cursor_y * 80) + cursor_x;
+	uint16_t position = (cursor_y * SCREEN_WIDTH) + cursor_x;
 
 	outb(0x3d4, 14);
 	outb(0x3d5, position >> 8);
